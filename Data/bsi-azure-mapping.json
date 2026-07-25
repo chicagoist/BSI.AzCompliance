@@ -1,7 +1,7 @@
 {
     "version": "3.0.0",
     "generator": "BSI.AzCompliance",
-    "repository": "https://github.com/BSI-AzCompliance/BSI-AzCompliance",
+    "repository": "https://github.com/chicagoist/BSI-AzCompliance",
     "lastSynced": "2026-07-25T00:00:00Z",
     "catalogUrl": "https://raw.githubusercontent.com/BSI-Bund/IT-Grundschutz-Kompendium/refs/heads/main/OSCAL/Grundschutz-plus-catalog.json",
     "catalogFallbackUrls": [

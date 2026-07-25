@@ -165,4 +165,4 @@ MIT License — see [LICENSE](LICENSE)
 ---
 
 **Author**: Valerii Dundukov  
-**Project**: [github.com/BSI-AzCompliance/BSI-AzCompliance](https://github.com/BSI-AzCompliance/BSI-AzCompliance)
+**Project**: [github.com/chicagoist/BSI-AzCompliance](https://github.com/chicagoist/BSI-AzCompliance)
