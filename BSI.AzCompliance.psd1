@@ -55,7 +55,7 @@
         PSData = @{
             Tags       = @('BSI', 'Compliance', 'Azure', 'IT-Grundschutz', 'OSCAL', 'Security', 'Cloud', 'DevSecOps')
             LicenseUri = 'https://opensource.org/licenses/MIT'
-            ProjectUri = 'https://github.com/JendrixBln/BSI-AzCompliance'
+            ProjectUri = 'https://github.com/BSI-AzCompliance/BSI-AzCompliance'
         }
     }
 }

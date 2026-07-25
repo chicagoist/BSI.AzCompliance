@@ -14,7 +14,7 @@
 ### Changed
 - **BREAKING**: Path resolution now uses `$PSScriptRoot` (no longer depends on `.opencode/skills/` directory)
 - Module version bumped from 2.0.0 to 3.0.0
-- Updated `ProjectUri` to `github.com/JendrixBln/BSI-AzCompliance`
+- Updated `ProjectUri` to `github.com/BSI-AzCompliance/BSI-AzCompliance`
 - Default mapping path: `$PSScriptRoot/Data/bsi-azure-mapping.json` (was: `.opencode/skills/...`)
 - Default cache path: `$PSScriptRoot/Data/cache/` (was: `.opencode/skills/.../cache/`)
 

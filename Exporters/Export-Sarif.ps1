@@ -95,7 +95,7 @@ function Export-Sarif {
                         name           = 'BSI.AzCompliance'
                         version        = $Version
                         semanticVersion = $Version
-                        informationUri = 'https://github.com/JendrixBln/K22-3-tier'
+                        informationUri = 'https://github.com/BSI-AzCompliance/BSI-AzCompliance'
                         rules          = $rules
                     }
                 }
