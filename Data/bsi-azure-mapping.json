@@ -1,0 +1,308 @@
+{
+    "version": "3.0.0",
+    "generator": "BSI.AzCompliance",
+    "repository": "https://github.com/JendrixBln/BSI-AzCompliance",
+    "lastSynced": "2026-07-25T00:00:00Z",
+    "catalogUrl": "https://raw.githubusercontent.com/BSI-Bund/IT-Grundschutz-Kompendium/refs/heads/main/OSCAL/Grundschutz-plus-catalog.json",
+    "catalogFallbackUrls": [
+        "https://raw.githubusercontent.com/BSI-Bund/IT-Grundschutz-Kompendium/main/OSCAL/Grundschutz-plus-catalog.json"
+    ],
+    "mappings": [
+        {
+            "controlId": "ARCH.5.2",
+            "title": "Perimeterschutz - Deny SSH/RDP from Internet",
+            "category": "Network",
+            "severity": "Critical",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00549",
+            "localCheck": {
+                "description": "NSG rules must deny SSH (22) and RDP (3389) from Internet",
+                "mustMatchAtLeast": 3,
+                "patterns": [
+                    "az network nsg rule create.*--destination-port-ranges 22.*--access Deny",
+                    "az network nsg rule create.*--destination-port-ranges 3389.*--access Deny",
+                    "DenySsh|DenyRdp|Deny-SSH|Deny-RDP|nsg.*deny.*inbound"
+                ]
+            }
+        },
+        {
+            "controlId": "ARCH.2.1",
+            "title": "Netzdesign - Netzsegmente (Hub-Spoke mit getrennten Subnetzen)",
+            "category": "Network",
+            "severity": "High",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00545",
+            "localCheck": {
+                "description": "VNet must have separate web/app/db subnets with NSG associations",
+                "mustMatchAtLeast": 4,
+                "patterns": [
+                    "subnet-web|subnetWeb",
+                    "subnet-app|subnetApp",
+                    "subnet-db|subnetDb",
+                    "az network vnet subnet create.*--nsg",
+                    "vnet-spoke|vnetSpoke"
+                ]
+            }
+        },
+        {
+            "controlId": "ARCH.5.1",
+            "title": "Perimeterschutz - Keine öffentlichen IPs auf DB/App-Tier",
+            "category": "Network",
+            "severity": "Critical",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00548",
+            "localCheck": {
+                "description": "Backend VMs (db, app) must not have public IPs assigned",
+                "mustMatchAtLeast": 2,
+                "patterns": [
+                    "VM-(db|app).*--public-ip-address.*\\\"\\\"|--public-ip-address.*''",
+                    "NIC-First|nic.*create.*--private-ip|--nics",
+                    "NoPublicIp|no.*public.*ip"
+                ]
+            }
+        },
+        {
+            "controlId": "ARCH.2.3",
+            "title": "Netzdesign - Hub-Spoke VNet Peering Connected",
+            "category": "Network",
+            "severity": "High",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00547",
+            "localCheck": {
+                "description": "VNet peering must exist between Hub and Spoke",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "az network vnet peering create.*--allow-vnet-access",
+                    "Hub-to-Spoke|Spoke-to-Hub|vnet.*peer"
+                ]
+            }
+        },
+        {
+            "controlId": "ARCH.5.3",
+            "title": "Perimeterschutz - Azure Bastion fuer sicheren SSH-Zugang",
+            "category": "Network",
+            "severity": "High",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00550",
+            "localCheck": {
+                "description": "Azure Bastion must be deployed for secure SSH access",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "az network bastion create|BastionHost|bastion.*host",
+                    "AzureBastionSubnet"
+                ]
+            }
+        },
+        {
+            "controlId": "KONF.11.8",
+            "title": "Verschlüsselung schuetzenswerter Daten at-rest",
+            "category": "VM",
+            "severity": "High",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00684",
+            "localCheck": {
+                "description": "VM disks must use encryption (EncryptionAtHost or DiskEncryptionSet)",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "encryption-at-host|EncryptionAtHost|encryptionAtHost.*true",
+                    "disk-encryption|DiskEncryption|--encryption-at-host",
+                    "encryptionSetId|diskEncryptionSet"
+                ]
+            }
+        },
+        {
+            "controlId": "BER.2",
+            "title": "Identitaetsmanagement - SystemAssigned Managed Identity",
+            "category": "Identity",
+            "severity": "Medium",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00618",
+            "localCheck": {
+                "description": "VMs must have SystemAssigned Managed Identity enabled",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "assign-identity.*\\[system\\]|--assign-identity.*system",
+                    "ManagedIdentity|managed.*identity"
+                ]
+            }
+        },
+        {
+            "controlId": "BER.6",
+            "title": "Schluesselmanagement - Azure Key Vault mit Soft-Delete und Purge Protection",
+            "category": "Identity",
+            "severity": "Critical",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00622",
+            "localCheck": {
+                "description": "Azure Key Vault must be used with soft-delete and purge protection",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "az keyvault|KeyVault|key.*vault",
+                    "enablePurgeProtection|enableSoftDelete"
+                ]
+            }
+        },
+        {
+            "controlId": "BER.4",
+            "title": "Berechtigungsmanagement - RBAC Rollen fuer Key Vault Zugriff",
+            "category": "Identity",
+            "severity": "High",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00620",
+            "localCheck": {
+                "description": "RBAC roles must be assigned for Key Vault access via Managed Identity",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "az role assignment create|role.*assignment",
+                    "Key Vault Secrets User|key.*vault.*secret",
+                    "assignee.*principal|Managed.*Identity"
+                ]
+            }
+        },
+        {
+            "controlId": "NOT.4",
+            "title": "Datensicherung - Automatisierte Backups fuer VMs",
+            "category": "Backup",
+            "severity": "High",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00763",
+            "localCheck": {
+                "description": "Azure Backup must be configured for VMs",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "az backup|RecoveryServices|recovery.*services.*vault",
+                    "backup.*protection|protection.*enable",
+                    "rsv-|recoveryServicesVault"
+                ]
+            }
+        },
+        {
+            "controlId": "DET.3",
+            "title": "Protokollierung - NSG Flow Logs fuer Netzwerkueberwachung",
+            "category": "Monitoring",
+            "severity": "Medium",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00504",
+            "localCheck": {
+                "description": "NSG Flow Logs must be enabled with retention",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "az network watcher flow-log|flow-log.*create",
+                    "NetworkWatcher|network.*watcher",
+                    "flowLogRetentionDays|retention.*days"
+                ]
+            }
+        },
+        {
+            "controlId": "DET.3.1",
+            "title": "Network Watcher exists in target region",
+            "category": "Monitoring",
+            "severity": "Medium",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00504",
+            "localCheck": {
+                "description": "Network Watcher should be available in the deployment region",
+                "mustMatchAtLeast": 0,
+                "patterns": []
+            }
+        },
+        {
+            "controlId": "KONF.2.6",
+            "title": "Automatische Konfigurationsverwaltung via Azure Policy",
+            "category": "Policy",
+            "severity": "Medium",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00661",
+            "localCheck": {
+                "description": "Azure Policy assignments should be configured",
+                "mustMatchAtLeast": 0,
+                "patterns": [
+                    "az policy assignment|Policy.*Assignment",
+                    "azure.*policy"
+                ]
+            }
+        },
+        {
+            "controlId": "CON.1",
+            "title": "Verschluesselung - TLS 1.2 Minimum auf Storage Accounts",
+            "category": "VM",
+            "severity": "High",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00469",
+            "localCheck": {
+                "description": "Storage account must enforce TLS 1.2+",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "min-tls-version.*TLS1_2|minimumTlsVersion.*TLS1_2",
+                    "enableHttpsTrafficOnly.*true|--https-only.*true",
+                    "allowBlobPublicAccess.*false"
+                ]
+            }
+        },
+        {
+            "controlId": "OPS.1.1.4",
+            "title": "Monitoring - Diagnostics Settings auf Key Vault",
+            "category": "Monitoring",
+            "severity": "Medium",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00785",
+            "localCheck": {
+                "description": "Diagnostic settings should be configured for Key Vault",
+                "mustMatchAtLeast": 0,
+                "patterns": [
+                    "diagnostic.*setting|monitor.*diagnostic",
+                    "az monitor diagnostic-settings"
+                ]
+            }
+        },
+        {
+            "controlId": "DER.1",
+            "title": "Schadensbegrenzung - NAT Gateway fuer outbound Traffic",
+            "category": "Network",
+            "severity": "Medium",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00499",
+            "localCheck": {
+                "description": "NAT Gateway must be deployed for App/DB subnets",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "az network nat gateway|nat.*gateway",
+                    "nat-gateway-prod|NatGateway",
+                    "subnet update.*--nat-gateway"
+                ]
+            }
+        },
+        {
+            "controlId": "INF.1",
+            "title": "Recovery Services Vault Existenz und Konfiguration",
+            "category": "Backup",
+            "severity": "Medium",
+            "baseline": "C",
+            "bsiReference": "BSI-G-00529",
+            "localCheck": {
+                "description": "Recovery Services Vault must exist for disaster recovery",
+                "mustMatchAtLeast": 0,
+                "patterns": [
+                    "recoveryServicesVault|Recovery.*Services.*Vault",
+                    "rsv-|recovery.*vault"
+                ]
+            }
+        },
+        {
+            "controlId": "APP.4.2",
+            "title": "Patch-Management - VM Image Aktualitaet pruefen",
+            "category": "VM",
+            "severity": "Medium",
+            "baseline": "B",
+            "bsiReference": "BSI-G-00434",
+            "localCheck": {
+                "description": "VMs should use supported OS image versions",
+                "mustMatchAtLeast": 1,
+                "patterns": [
+                    "Ubuntu2204|Ubuntu2404|Ubuntu.*LTS",
+                    "image.*ubuntu|--image.*Ubuntu"
+                ]
+            }
+        }
+    ]
+}
