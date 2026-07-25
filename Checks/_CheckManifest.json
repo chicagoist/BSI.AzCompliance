@@ -1,0 +1,213 @@
+{
+    "version": "2.0.0",
+    "generator": "BSI.AzCompliance",
+    "checks": [
+        {
+            "id": "ARCH.5.2",
+            "function": "Test-NsgDenyInbound",
+            "file": "Checks/Network/Test-NsgDenyInbound.ps1",
+            "severity": "Critical",
+            "baseline": "B",
+            "category": "Network",
+            "description": "Perimeterschutz - Blockieren direkter oeffentlicher Verbindungen (SSH/RDP)",
+            "bsiReference": "BSI-G-00549",
+            "localCheckType": "regex",
+            "remoteCheckType": "nsg"
+        },
+        {
+            "id": "ARCH.2.1",
+            "function": "Test-VNetSubnets",
+            "file": "Checks/Network/Test-VNetSubnets.ps1",
+            "severity": "High",
+            "baseline": "B",
+            "category": "Network",
+            "description": "Netzdesign - Netzsegmente (Hub-Spoke mit getrennten Subnetzen)",
+            "bsiReference": "BSI-G-00545",
+            "localCheckType": "regex",
+            "remoteCheckType": "vnet_subnets"
+        },
+        {
+            "id": "ARCH.5.1",
+            "function": "Test-NoPublicIp",
+            "file": "Checks/Network/Test-NoPublicIp.ps1",
+            "severity": "Critical",
+            "baseline": "B",
+            "category": "Network",
+            "description": "Perimeterschutz - Keine oeffentlichen IPs auf DB/App-Tier",
+            "bsiReference": "BSI-G-00548",
+            "localCheckType": "regex",
+            "remoteCheckType": "vm_public_ip"
+        },
+        {
+            "id": "ARCH.2.3",
+            "function": "Test-VNetPeering",
+            "file": "Checks/Network/Test-VNetPeering.ps1",
+            "severity": "High",
+            "baseline": "B",
+            "category": "Network",
+            "description": "Netzdesign - Hub-Spoke VNet Peering Connected",
+            "bsiReference": "BSI-G-00547",
+            "remoteCheckType": "vnet_peering"
+        },
+        {
+            "id": "ARCH.5.3",
+            "function": "Test-BastionExists",
+            "file": "Checks/Network/Test-BastionExists.ps1",
+            "severity": "High",
+            "baseline": "B",
+            "category": "Network",
+            "description": "Perimeterschutz - Azure Bastion fuer sicheren SSH-Zugang",
+            "bsiReference": "BSI-G-00550",
+            "remoteCheckType": "bastion"
+        },
+        {
+            "id": "KONF.11.8",
+            "function": "Test-DiskEncryption",
+            "file": "Checks/VM/Test-DiskEncryption.ps1",
+            "severity": "High",
+            "baseline": "B",
+            "category": "VM",
+            "description": "Verschluesselung schuetzenswerter Daten at-rest",
+            "bsiReference": "BSI-G-00684",
+            "localCheckType": "regex",
+            "remoteCheckType": "vm_disk_encryption"
+        },
+        {
+            "id": "BER.2",
+            "function": "Test-ManagedIdentity",
+            "file": "Checks/Identity/Test-ManagedIdentity.ps1",
+            "severity": "Medium",
+            "baseline": "B",
+            "category": "Identity",
+            "description": "Identitaetsmanagement - SystemAssigned Managed Identity",
+            "bsiReference": "BSI-G-00618",
+            "localCheckType": "regex",
+            "remoteCheckType": "vm_identity"
+        },
+        {
+            "id": "BER.6",
+            "function": "Test-KeyVaultConfig",
+            "file": "Checks/Identity/Test-KeyVaultConfig.ps1",
+            "severity": "Critical",
+            "baseline": "B",
+            "category": "Identity",
+            "description": "Schluesselmanagement - Azure Key Vault mit Soft-Delete und Purge Protection",
+            "bsiReference": "BSI-G-00622",
+            "localCheckType": "regex",
+            "remoteCheckType": "keyvault"
+        },
+        {
+            "id": "BER.4",
+            "function": "Test-RbacRoles",
+            "file": "Checks/Identity/Test-RbacRoles.ps1",
+            "severity": "High",
+            "baseline": "B",
+            "category": "Identity",
+            "description": "Berechtigungsmanagement - RBAC Rollen fuer Key Vault Zugriff",
+            "bsiReference": "BSI-G-00620",
+            "localCheckType": "regex",
+            "remoteCheckType": "rbac_role"
+        },
+        {
+            "id": "NOT.4",
+            "function": "Test-AzureBackup",
+            "file": "Checks/Backup/Test-AzureBackup.ps1",
+            "severity": "High",
+            "baseline": "B",
+            "category": "Backup",
+            "description": "Datensicherung - Automatisierte Backups fuer VMs",
+            "bsiReference": "BSI-G-00763",
+            "localCheckType": "regex",
+            "remoteCheckType": "backup"
+        },
+        {
+            "id": "DET.3",
+            "function": "Test-FlowLogs",
+            "file": "Checks/Monitoring/Test-FlowLogs.ps1",
+            "severity": "Medium",
+            "baseline": "B",
+            "category": "Monitoring",
+            "description": "Protokollierung - NSG Flow Logs fuer Netzwerkueberwachung",
+            "bsiReference": "BSI-G-00504",
+            "localCheckType": "regex",
+            "remoteCheckType": "flow_logs"
+        },
+        {
+            "id": "DET.3.1",
+            "function": "Test-NetworkWatcher",
+            "file": "Checks/Monitoring/Test-NetworkWatcher.ps1",
+            "severity": "Medium",
+            "baseline": "B",
+            "category": "Monitoring",
+            "description": "Network Watcher exists in target region",
+            "bsiReference": "BSI-G-00504",
+            "remoteCheckType": "network_watcher"
+        },
+        {
+            "id": "KONF.2.6",
+            "function": "Test-AzurePolicy",
+            "file": "Checks/Policy/Test-AzurePolicy.ps1",
+            "severity": "Medium",
+            "baseline": "B",
+            "category": "Policy",
+            "description": "Automatische Konfigurationsverwaltung via Azure Policy",
+            "bsiReference": "BSI-G-00661",
+            "remoteCheckType": "policy_assignments"
+        },
+        {
+            "id": "CON.1",
+            "function": "Test-TlsVersion",
+            "file": "Checks/VM/Test-TlsVersion.ps1",
+            "severity": "High",
+            "baseline": "B",
+            "category": "VM",
+            "description": "Verschluesselung - TLS 1.2 Minimum auf Storage Accounts",
+            "bsiReference": "BSI-G-00469",
+            "remoteCheckType": "storage_tls"
+        },
+        {
+            "id": "OPS.1.1.4",
+            "function": "Test-DiagnosticSettings",
+            "file": "Checks/Monitoring/Test-DiagnosticSettings.ps1",
+            "severity": "Medium",
+            "baseline": "B",
+            "category": "Monitoring",
+            "description": "Monitoring - Diagnostics Settings auf Key Vault",
+            "bsiReference": "BSI-G-00785",
+            "remoteCheckType": "diagnostic_settings"
+        },
+        {
+            "id": "DER.1",
+            "function": "Test-NatGateway",
+            "file": "Checks/Network/Test-NatGateway.ps1",
+            "severity": "Medium",
+            "baseline": "B",
+            "category": "Network",
+            "description": "Schadensbegrenzung - NAT Gateway fuer outbound Traffic",
+            "bsiReference": "BSI-G-00499",
+            "remoteCheckType": "nat_gateway"
+        },
+        {
+            "id": "INF.1",
+            "function": "Test-RecoveryServicesVault",
+            "file": "Checks/Backup/Test-RecoveryServicesVault.ps1",
+            "severity": "Medium",
+            "baseline": "C",
+            "category": "Backup",
+            "description": "Recovery Services Vault Existenz und Konfiguration",
+            "bsiReference": "BSI-G-00529",
+            "remoteCheckType": "recovery_services_vault"
+        },
+        {
+            "id": "APP.4.2",
+            "function": "Test-VmImageVersion",
+            "file": "Checks/VM/Test-VmImageVersion.ps1",
+            "severity": "Medium",
+            "baseline": "B",
+            "category": "VM",
+            "description": "Patch-Management - VM Image Aktualitaet pruefen",
+            "bsiReference": "BSI-G-00434",
+            "remoteCheckType": "vm_image"
+        }
+    ]
+}

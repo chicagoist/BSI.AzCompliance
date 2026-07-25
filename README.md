@@ -85,8 +85,8 @@ Internet -> VM-web (Nginx :80) -> VM-app (Flask :5000) -> VM-db (MariaDB :3306)
 BSI-AzCompliance/
 ├── BSI.AzCompliance.psd1          # Module manifest
 ├── BSI.AzCompliance.psm1          # Module loader
-├── Classes/ComplianceResult.psm1  # Core data model
-├── Enums/Severity.psm1            # Type definitions
+├── Classes/ComplianceResult.ps1  # Core data model
+├── Enums/Severity.ps1            # Type definitions
 ├── Private/                       # Internal functions
 │   ├── Get-AzCliResponse.ps1      # Azure CLI wrapper (retry/cache/timeout)
 │   ├── Get-BsiCatalogData.ps1     # OSCAL catalog management

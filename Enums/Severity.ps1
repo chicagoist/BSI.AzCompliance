@@ -5,7 +5,11 @@
 .DESCRIPTION
     Defines severity levels, check modes, output formats, and baseline classifications
     used across the BSI IT-Grundschutz++ compliance validation framework.
+    Uses Add-Type for globally-visible .NET enum types (required for module export).
 #>
+
+# --- Globally-visible .NET enums via Add-Type ---
+# Each defined once (idempotent via -IgnoreWarnings or pre-checks)
 
 if (-not ('BsiSeverity' -as [type])) {
     Add-Type -TypeDefinition @"
@@ -16,7 +20,7 @@ if (-not ('BsiSeverity' -as [type])) {
         Low      = 3,
         Info     = 4
     }
-"@
+"@ -ErrorAction Stop
 }
 
 if (-not ('BsiCheckMode' -as [type])) {
@@ -25,7 +29,7 @@ if (-not ('BsiCheckMode' -as [type])) {
         Local  = 0,
         Remote = 1
     }
-"@
+"@ -ErrorAction Stop
 }
 
 if (-not ('BsiOutputFormat' -as [type])) {
@@ -37,7 +41,7 @@ if (-not ('BsiOutputFormat' -as [type])) {
         JUnitXml = 3,
         Html     = 4
     }
-"@
+"@ -ErrorAction Stop
 }
 
 if (-not ('BsiBaseline' -as [type])) {
@@ -47,18 +51,18 @@ if (-not ('BsiBaseline' -as [type])) {
         C = 1,
         D = 2
     }
-"@
+"@ -ErrorAction Stop
 }
 
 if (-not ('BsiCheckStatus' -as [type])) {
     Add-Type -TypeDefinition @"
     public enum BsiCheckStatus {
-        Pass = 0,
-        Fail = 1,
-        Skip = 2,
+        Pass  = 0,
+        Fail  = 1,
+        Skip  = 2,
         Error = 3
     }
-"@
+"@ -ErrorAction Stop
 }
 
 # --- Helper: convert severity string to enum ---

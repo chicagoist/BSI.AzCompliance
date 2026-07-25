@@ -22,6 +22,7 @@
         'Get-BsiSummary',
         'Add-BsiResult',
         'Add-BsiResultObject',
+        'New-BsiComplianceResult',
         'Sync-BsiCatalog',
         'Get-BsiMapping',
         'Get-BsiCatalogControls',

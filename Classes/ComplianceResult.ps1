@@ -7,7 +7,8 @@
     evidence, remediation guidance, and conversion to SARIF/JUnit/JSON.
 #>
 
-. (Join-Path $PSScriptRoot '..' 'Enums' 'Severity.psm1')
+# Enums already loaded by module before this file is sourced
+# (Severity.psm1 is loaded first in BSI.AzCompliance.psm1)
 
 class ComplianceResult {
     [string]            $ControlId
@@ -236,6 +237,24 @@ function Add-BsiResultObject {
     if ($Result.Remediation) {
         Write-Host ("       -> {0}" -f $Result.Remediation) -ForegroundColor Yellow
     }
+}
+
+function New-BsiComplianceResult {
+    <#
+    .SYNOPSIS
+        Creates a new ComplianceResult object. Exported helper for external callers
+        that cannot use `using module` (e.g., Pester tests).
+    #>
+    param(
+        [string]$ControlId = '',
+        [string]$Title = '',
+        [string]$Category = '',
+        [BsiCheckMode]$Mode = [BsiCheckMode]::Remote,
+        [BsiCheckStatus]$Status = [BsiCheckStatus]::Fail,
+        [BsiSeverity]$Severity = [BsiSeverity]::Medium,
+        [string]$Details = ''
+    )
+    return [ComplianceResult]::new($ControlId, $Title, $Category, $Mode, $Status, $Severity, $Details)
 }
 
 function Get-BsiSummary {

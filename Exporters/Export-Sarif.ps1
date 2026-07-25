@@ -36,6 +36,8 @@ function Export-Sarif {
                     bsiReference   = $check.bsiReference
                 }
             }
+        }
+    } else {
         Write-Warning "[Export-Sarif] Check manifest not found at $manifestPath — SARIF output will not include rule definitions"
     }
     $sarifResults = @()
