@@ -26,20 +26,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Import Module and Run Local Checks
+      - name: Import Module and Run Local Checks (Trap Scripts)
         shell: pwsh
         run: |
           Import-Module ./BSI.AzCompliance.psd1 -Force
-          $deployScript = Get-ChildItem -Recurse -Filter 'create_3-tier*.ps1' | Select-Object -First 1
-          if ($deployScript) {
-            Invoke-BsiCompliance -Local -ScriptPath $deployScript.FullName -OutputFormat Console,Sarif -OutputPath ./reports/local-bsi
+          $trapScript = Get-ChildItem -Recurse -Path ./Tests/Integration -Filter 'trap-04-fully-compliant.ps1' | Select-Object -First 1
+          if ($trapScript) {
+            New-Item -ItemType Directory -Force -Path ./reports | Out-Null
+            Invoke-BsiCompliance -Local -ScriptPath $trapScript.FullName -OutputFormat Console,Sarif -OutputPath ./reports/local-bsi
           } else {
-            Write-Warning 'No deployment script found; skipping Local checks'
-            exit 0
+            Write-Warning 'No trap script found; skipping Local checks'
           }
 
       - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: ./reports/local-bsi.sarif
@@ -68,7 +68,7 @@ jobs:
           Invoke-BsiCompliance -Remote -ConfigPath ./scripts/config.ps1 -OutputFormat Console,Sarif,Html,Json -OutputPath ./reports/remote-compliance
 
       - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: ./reports/remote-compliance.sarif
@@ -81,6 +81,7 @@ jobs:
           name: bsi-compliance-report
           path: ./reports/remote-compliance.html
           retention-days: 30
+          if-no-files-found: ignore
 
       - name: Upload JSON Report
         uses: actions/upload-artifact@v4
@@ -89,3 +90,4 @@ jobs:
           name: bsi-compliance-json
           path: ./reports/remote-compliance.json
           retention-days: 30
+          if-no-files-found: ignore
