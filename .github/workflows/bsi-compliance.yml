@@ -5,7 +5,6 @@ on:
     branches: [main, develop]
     paths:
       - '**.ps1'
-      - '**.psm1'
       - '**.psd1'
       - 'Data/**'
       - '.github/workflows/bsi-compliance.yml'
@@ -26,11 +25,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install PowerShell 7
-        uses: actions/setup-powershell@v2
-        with:
-          version: '7.4'
 
       - name: Import Module and Run Local Checks
         shell: pwsh
@@ -59,11 +53,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install PowerShell 7
-        uses: actions/setup-powershell@v2
-        with:
-          version: '7.4'
 
       - name: Azure Login
         uses: azure/login@v2
