@@ -89,11 +89,18 @@ function Get-AzCliResponse {
             $isWslAz = $IsLinux -and $azExe -match '^/mnt/'
 
             if ($isWslAz) {
-                # Native invocation: & operator works correctly with WSL interop
-                $allOutput = & az @allArgs 2>&1 | Out-String
-                $lastRc = $LASTEXITCODE
-                $lastOutput = if ($null -eq $allOutput) { '' } else { $allOutput.Trim() }
-                $lastErr = ''
+                # Use explicit binary path to bypass any PowerShell alias/function named 'az'
+                # $ErrorActionPreference='Continue' prevents az stderr from becoming terminating errors
+                $prevEAP = $ErrorActionPreference
+                $ErrorActionPreference = 'Continue'
+                try {
+                    $allOutput = & $azExe @allArgs 2>&1 | Out-String
+                    $lastRc = $LASTEXITCODE
+                    $lastOutput = if ($null -eq $allOutput) { '' } else { $allOutput.Trim() }
+                    $lastErr = ''
+                } finally {
+                    $ErrorActionPreference = $prevEAP
+                }
             } else {
                 $process = New-Object System.Diagnostics.Process
                 $process.StartInfo.FileName = $azExe
