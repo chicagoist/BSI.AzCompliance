@@ -51,12 +51,12 @@ jobs:
           category: bsi-local-validation
 
   # =====================================================================
-  # REMOTE VALIDATION — runs on schedule, manual trigger, or push to main.
-  # Queries live Azure infrastructure. Requires OIDC + CONFIG_PS1_B64 secret.
+  # REMOTE VALIDATION — runs on self-hosted runner (VM-web in Azure).
+  # Uses Managed Identity instead of OIDC — no Azure AD App Registration needed.
   # =====================================================================
   remote-validation:
     name: Remote BSI Validation
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, azure]
     if: |
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
@@ -76,12 +76,12 @@ jobs:
           )
           Write-Host "[OK] config.ps1 written ($((Get-Item ./scripts/config.ps1).Length) bytes)"
 
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Azure Login (Managed Identity)
+        shell: pwsh
+        run: |
+          az login --identity --allow-no-subscriptions
+          az account set --subscription bc68fbe3-9ca5-4381-ab34-645dd61cdbbc
+          Write-Host "[OK] Logged in as: $(az account show --query name -o tsv)"
 
       - name: Remote Compliance Check
         shell: pwsh
