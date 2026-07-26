@@ -12,7 +12,8 @@ on:
     branches: [main]
   schedule:
     - cron: '0 6 * * 1'   # Weekly Monday 06:00 UTC
-  workflow_dispatch:        # Manual trigger
+  workflow_dispatch:        # Manual: gh workflow run bsi-compliance.yml
+                            # Run after deployment for live Azure validation
 
 permissions:
   contents: read
@@ -44,7 +45,7 @@ jobs:
 
       - name: Upload SARIF to Code Scanning
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && hashFiles('./reports/local-bsi.sarif') != ''
         with:
           sarif_file: ./reports/local-bsi.sarif
           category: bsi-local-validation
@@ -60,7 +61,7 @@ jobs:
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    environment: azure-production
+    environment: azure-production  # Must be created in GitHub Settings → Environments
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,9 +72,9 @@ jobs:
           New-Item -ItemType Directory -Force -Path ./scripts | Out-Null
           [System.IO.File]::WriteAllBytes(
             "$PWD/scripts/config.ps1",
-            [System.Convert]::FromBase64String("${{ secrets.CONFIG_PS1_B64 }}")
+            [System.Convert]::FromBase64String("${{ secrets.CONFIG_PS1_B64 }}".Trim())
           )
-          Write-Host "[OK] config.ps1 written"
+          Write-Host "[OK] config.ps1 written ($((Get-Item ./scripts/config.ps1).Length) bytes)"
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -91,7 +92,7 @@ jobs:
 
       - name: Upload SARIF to Code Scanning
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && hashFiles('./reports/remote-compliance.sarif') != ''
         with:
           sarif_file: ./reports/remote-compliance.sarif
           category: bsi-remote-validation
