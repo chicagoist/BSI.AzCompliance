@@ -61,7 +61,7 @@ jobs:
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    environment: azure-production  # Must be created in GitHub Settings → Environments
+    # Uses Managed Identity on self-hosted runner — no OIDC secrets needed
     steps:
       - name: Checkout
         uses: actions/checkout@v4
