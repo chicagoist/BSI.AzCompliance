@@ -152,6 +152,110 @@ BSI-AzCompliance/
     testResultsFiles: '**/bsi.junit.xml'
 ```
 
+---
+
+## ⚙️ GitHub Secrets & OIDC Federation Setup
+
+For the CI/CD pipeline to run **Remote validation** (querying live Azure infrastructure), you must configure 4 GitHub Secrets and set up OIDC federation between GitHub Actions and Azure AD.
+
+> **Note**: This setup is **only required for CI/CD** (GitHub Actions). Local validation works with just `az login`.
+
+### Prerequisites
+
+- An **App Registration** in Azure AD (requires Azure AD admin rights on your tenant)
+- **Owner** or **User Access Administrator** role on the target subscription (to assign RBAC roles)
+
+### Step 1: Create App Registration in Azure AD
+
+1. Open **Azure Portal** → **Microsoft Entra ID** → **App registrations** → **+ New registration**
+2. Fill in:
+   - **Name:** `BSI-AzCompliance-CICD`
+   - **Supported account types:** `Accounts in this organizational directory only`
+   - **Redirect URI:** leave empty
+3. Click **Register**
+4. Copy the **Application (client) ID** — this will be your `AZURE_CLIENT_ID`
+
+### Step 2: Configure OIDC Federated Credentials
+
+1. In the App Registration, go to **Certificates & secrets** → **Federated credentials** → **+ Add credential**
+2. Select scenario: **GitHub Actions deploying Azure resources**
+3. Fill in:
+   - **Organization:** your GitHub org/username (e.g., `chicagoist`)
+   - **Repository:** `BSI.AzCompliance`
+   - **Entity type:** `Branch`
+   - **GitHub branch name:** `main`
+4. Click **Add**
+
+### Step 3: Grant RBAC Roles to App Registration
+
+1. Open **Azure Portal** → **Subscriptions** → your subscription → **Access control (IAM)** → **+ Add** → **Add role assignment**
+2. Assign **Reader** role to `BSI-AzCompliance-CICD`
+3. Repeat for **Key Vault Secrets User** role (needed for Key Vault checks)
+
+### Step 4: Add GitHub Secrets
+
+Go to your repository → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
+
+| Secret Name | Value | How to get |
+|---|---|---|
+| `AZURE_CLIENT_ID` | Application (client) ID | From **Step 1**, the App Registration Overview page |
+| `AZURE_TENANT_ID` | Your Azure tenant ID | `az account show --query tenantId -o tsv` or Portal → Entra ID → Overview |
+| `AZURE_SUBSCRIPTION_ID` | Your Azure subscription ID | `az account show --query id -o tsv` or Portal → Subscriptions |
+| `CONFIG_PS1_B64` | Base64-encoded config.ps1 | See below |
+
+#### Generating `CONFIG_PS1_B64`
+
+Encode your `config.ps1` to base64:
+
+```powershell
+# In PowerShell:
+$base64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("scripts\config.ps1"))
+Write-Host $base64
+```
+
+```bash
+# In bash:
+base64 -w0 scripts/config.ps1
+```
+
+Copy the output (a long base64 string, ~2900 characters) and paste as the `CONFIG_PS1_B64` secret value.
+
+### Step 5 (Optional): Create Environment
+
+1. **Settings** → **Environments** → **New environment**
+2. Name: `azure-production`
+3. No protection rules required — just save
+
+### Self-Hosted Runner Alternative
+
+If you cannot create an App Registration (e.g., student account without Azure AD admin rights), use a **self-hosted runner** on a VM inside Azure with Managed Identity:
+
+```bash
+# On the VM (e.g., VM-web):
+curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/v2.336.0/actions-runner-linux-x64-2.336.0.tar.gz
+tar xzf actions-runner.tar.gz && rm actions-runner.tar.gz
+./config.sh --url https://github.com/YOUR_ORG/BSI.AzCompliance --token YOUR_RUNNER_TOKEN --name vm-web-runner --labels azure,self-hosted,linux
+sudo ./svc.sh install && sudo ./svc.sh start
+```
+
+Then update the workflow `runs-on` target:
+```yaml
+remote-validation:
+  runs-on: [self-hosted, azure]  # instead of ubuntu-latest
+```
+
+### Verification
+
+After setup, trigger the workflow:
+
+```bash
+gh workflow run bsi-compliance.yml --repo YOUR_ORG/BSI.AzCompliance
+```
+
+Or via GitHub UI: **Actions** → **BSI Compliance Check** → **Run workflow**.
+
+---
+
 ## Documentation
 
 - [Architecture Design](docs/BSI-AzCompliance-Design.md) — Full design document
