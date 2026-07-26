@@ -1,3 +1,4 @@
+# BSI ARCH.5.1: NoPublicIP for backend VMs (app, db)
 $rgName = "test-rg"
 $vnetSpoke1Name = "vnet-spoke1"
 $vnetHubName = "vnet-hub"
@@ -30,8 +31,8 @@ az network nat gateway create --resource-group $rgName --name "nat-gateway-prod"
 az network vnet subnet update --resource-group $rgName --vnet-name $vnetSpoke1Name --name $subnetApp --nat-gateway "nat-gateway-prod"
 
 az vm create --name "VM-web" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --image Ubuntu2204
-az vm create --name "VM-app" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --image Ubuntu2204
-az vm create --name "VM-db" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --image Ubuntu2204
+az vm create --name "VM-app" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --public-ip-address "" --image Ubuntu2204
+az vm create --name "VM-db" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --public-ip-address "" --image Ubuntu2204
 
 az keyvault create --name $keyVaultName --resource-group $rgName --enable-purge-protection --enable-soft-delete
 az role assignment create --assignee "00000000-0000-0000-0000-000000000000" --role "Key Vault Secrets User" --scope "/subscriptions/sub-id/resourceGroups/$rgName/providers/Microsoft.KeyVault/vaults/$keyVaultName"

@@ -1,3 +1,4 @@
+# BSI ARCH.5.1: NoPublicIP for backend VMs (app, db)
 $rgName = "test-rg"
 $vnetSpoke1Name = "vnet-spoke1"
 $vnetHubName = "vnet-hub"
@@ -30,8 +31,8 @@ az network nat gateway create --resource-group $rgName --name "nat-gateway-prod"
 az network vnet subnet update --resource-group $rgName --vnet-name $vnetSpoke1Name --name $subnetApp --nat-gateway "nat-gateway-prod"
 
 az vm create --name "VM-web" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --image Ubuntu2204
-az vm create --name "VM-app" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --image Ubuntu2204
-az vm create --name "VM-db" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --image Ubuntu2204
+az vm create --name "VM-app" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --public-ip-address "" --image Ubuntu2204
+az vm create --name "VM-db" --resource-group $rgName --encryption-at-host --assign-identity "[system]" --public-ip-address "" --image Ubuntu2204
 
 # TRAP: No Key Vault created (BER.6 should fail)
 # RBAC role assignment kept to avoid BER.4 cross-contamination
