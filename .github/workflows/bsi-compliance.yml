@@ -11,14 +11,17 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '0 6 * * 1'
-  workflow_dispatch:
+    - cron: '0 6 * * 1'   # Weekly Monday 06:00 UTC
+  workflow_dispatch:        # Manual trigger
 
 permissions:
   contents: read
   security-events: write
 
 jobs:
+  # =====================================================================
+  # LOCAL VALIDATION — runs on every PR/push. Tests module against trap scripts.
+  # =====================================================================
   local-validation:
     name: Local BSI Validation
     runs-on: ubuntu-latest
@@ -26,35 +29,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Import Module and Run Local Checks (Trap Scripts)
+      - name: Local Compliance Check (Trap Scripts)
         shell: pwsh
         run: |
           Import-Module ./BSI.AzCompliance.psd1 -Force
-          $trapScript = Get-ChildItem -Recurse -Path ./Tests/Integration -Filter 'trap-04-fully-compliant.ps1' | Select-Object -First 1
+          $trapScript = Get-ChildItem -Recurse -Path ./Tests/Integration -Filter 'trap-real-00-baseline.ps1' | Select-Object -First 1
           if ($trapScript) {
             New-Item -ItemType Directory -Force -Path ./reports | Out-Null
             Invoke-BsiCompliance -Local -ScriptPath $trapScript.FullName -OutputFormat Console,Sarif -OutputPath ./reports/local-bsi
+            Write-Host "[OK] Local validation passed using $($trapScript.Name)"
           } else {
             Write-Warning 'No trap script found; skipping Local checks'
           }
 
-      - name: Upload SARIF to GitHub Code Scanning
+      - name: Upload SARIF to Code Scanning
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: ./reports/local-bsi.sarif
           category: bsi-local-validation
 
+  # =====================================================================
+  # REMOTE VALIDATION — runs on schedule, manual trigger, or push to main.
+  # Queries live Azure infrastructure. Requires OIDC + CONFIG_PS1_B64 secret.
+  # =====================================================================
   remote-validation:
     name: Remote BSI Validation
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     environment: azure-production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Azure Login
+      - name: Hydrate config.ps1
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ./scripts | Out-Null
+          [System.IO.File]::WriteAllBytes(
+            "$PWD/scripts/config.ps1",
+            [System.Convert]::FromBase64String("${{ secrets.CONFIG_PS1_B64 }}")
+          )
+          Write-Host "[OK] config.ps1 written"
+
+      - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -65,9 +86,10 @@ jobs:
         shell: pwsh
         run: |
           Import-Module ./BSI.AzCompliance.psd1 -Force
+          New-Item -ItemType Directory -Force -Path ./reports | Out-Null
           Invoke-BsiCompliance -Remote -ConfigPath ./scripts/config.ps1 -OutputFormat Console,Sarif,Html,Json -OutputPath ./reports/remote-compliance
 
-      - name: Upload SARIF to GitHub Code Scanning
+      - name: Upload SARIF to Code Scanning
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
@@ -78,7 +100,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bsi-compliance-report
+          name: bsi-compliance-report-html
           path: ./reports/remote-compliance.html
           retention-days: 30
           if-no-files-found: ignore
@@ -87,7 +109,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bsi-compliance-json
+          name: bsi-compliance-report-json
           path: ./reports/remote-compliance.json
           retention-days: 30
           if-no-files-found: ignore
