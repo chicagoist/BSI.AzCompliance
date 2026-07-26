@@ -258,6 +258,21 @@ Or via GitHub UI: **Actions** → **BSI Compliance Check** → **Run workflow**.
 
 ---
 
+## ⚠️ Known Limitations (Student/Restricted Azure Accounts)
+
+When using a student or restricted Azure account (e.g., `@schule-zukunftsmotor.org`), the following operations require **admin intervention**:
+
+| Operation | Error | Workaround |
+|-----------|-------|------------|
+| **Remote BSI validation via OIDC** | `401` on App Registrations page; `az ad app create` blocked | Use self-hosted GitHub Actions runner with Managed Identity (see above) |
+| **Assign Key Vault RBAC to Managed Identities** | `403 Forbidden` / `Cannot find service principal in graph database` | Use Key Vault access policies (if RBAC authorization is disabled); or ask admin to grant `Key Vault Secrets User` role |
+| **Delete Recovery Services Vault** | `BMSUserErrorVaultDeletionNotAllowed` — orphaned backup items block deletion | Ask admin to force-delete via `az resource delete` |
+| **Delete entire Resource Group** | `AuthorizationFailed` — missing `resourceGroups/delete` permission | Delete resources individually; ask admin for full RG cleanup |
+
+> **Note**: These limitations only affect CI/CD setup and resource cleanup. Local validation (`Invoke-BsiCompliance -Local`) and remote validation after `az login` work normally.
+
+---
+
 ## Documentation
 
 - [Architecture Design](docs/BSI-AzCompliance-Design.md) — Full design document
