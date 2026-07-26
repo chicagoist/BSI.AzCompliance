@@ -35,7 +35,7 @@ param(
     [string]$ConfigPath = '.\config.ps1',
     [string]$SubscriptionId = '',
 
-    [string]$OutputFormat = 'Console',
+    [string[]]$OutputFormat = @('Console'),
     [string]$OutputPath = '',
 
     [string[]]$NsgNames = @('NSG-Web', 'NSG-App', 'NSG-DB'),

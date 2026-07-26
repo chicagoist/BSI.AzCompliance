@@ -63,7 +63,7 @@ function Invoke-BsiCompliance {
         [string]$ConfigPath = '.\config.ps1',
         [string]$SubscriptionId = '',
 
-        [string]$OutputFormat = 'Console',
+        [string[]]$OutputFormat = @('Console'),
         [string]$OutputPath = '',
 
         [string[]]$NsgNames = @('NSG-Web', 'NSG-App', 'NSG-DB'),
@@ -271,7 +271,7 @@ function Invoke-BsiCompliance {
     $summary = Get-BsiSummary
 
     # Export
-    $formats = $OutputFormat -split ',' | ForEach-Object { $_.Trim() }
+    $formats = ($OutputFormat -join ',') -split ',' | ForEach-Object { $_.Trim() }
     foreach ($fmt in $formats) {
         $fmtLower = $fmt.ToLower()
         $basePath = if ($OutputPath) { $OutputPath } else { ".\bsi-compliance" }
