@@ -137,7 +137,7 @@
                 "description": "Azure Key Vault must be used with soft-delete and purge protection",
                 "mustMatchAtLeast": 1,
                 "patterns": [
-                    "az keyvault|KeyVault|key.*vault",
+                    "az keyvault create|keyvault.*create",
                     "enablePurgeProtection|enableSoftDelete"
                 ]
             }
@@ -171,7 +171,7 @@
                 "mustMatchAtLeast": 1,
                 "patterns": [
                     "az backup|RecoveryServices|recovery.*services.*vault",
-                    "backup.*protection|protection.*enable",
+                    "az backup vault create|backup vault create|--backup-policy",
                     "rsv-|recoveryServicesVault"
                 ]
             }
