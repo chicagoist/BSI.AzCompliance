@@ -84,43 +84,42 @@ function Get-AzCliResponse {
                 return [PSCustomObject]@{ Output = ''; ExitCode = 1; Stderr = 'az CLI not found in PATH' }
             }
 
-            # WSL2 interop: Windows az binary needs bash -c wrapper
-            # System.Diagnostics.Process can't pass HOME/WSL auth context to Windows binaries
+            # WSL2 interop: System.Diagnostics.Process cannot pass auth context
+            # to Windows binaries. Use native PowerShell invocation instead.
             $isWslAz = $IsLinux -and $azExe -match '^/mnt/'
 
-            $process = New-Object System.Diagnostics.Process
             if ($isWslAz) {
-                # Run via bash -c so WSL interop correctly handles auth tokens
-                $process.StartInfo.FileName = '/bin/bash'
-                $quotedArgs = ($allArgs | ForEach-Object {
-                    if ($_ -match '[\s"$`]') { "'" + ($_ -replace "'", "'\''") + "'" } else { $_ }
-                }) -join ' '
-                $process.StartInfo.Arguments = "-c `"az $quotedArgs`""
+                # Native invocation: & operator works correctly with WSL interop
+                $allOutput = & az @allArgs 2>&1 | Out-String
+                $lastRc = $LASTEXITCODE
+                $lastOutput = if ($null -eq $allOutput) { '' } else { $allOutput.Trim() }
+                $lastErr = ''
             } else {
+                $process = New-Object System.Diagnostics.Process
                 $process.StartInfo.FileName = $azExe
                 $process.StartInfo.Arguments = ($allArgs | ForEach-Object {
                     if ($_ -match '\s') { "`"$_`"" } else { $_ }
                 }) -join ' '
-            }
-            $process.StartInfo.UseShellExecute = $false
-            $process.StartInfo.RedirectStandardOutput = $true
-            $process.StartInfo.RedirectStandardError = $true
-            $process.StartInfo.CreateNoWindow = $true
+                $process.StartInfo.UseShellExecute = $false
+                $process.StartInfo.RedirectStandardOutput = $true
+                $process.StartInfo.RedirectStandardError = $true
+                $process.StartInfo.CreateNoWindow = $true
 
-            $null = $process.Start()
-            $stdout = $process.StandardOutput.ReadToEnd()
-            $stderr = $process.StandardError.ReadToEnd()
+                $null = $process.Start()
+                $stdout = $process.StandardOutput.ReadToEnd()
+                $stderr = $process.StandardError.ReadToEnd()
 
-            if (-not $process.WaitForMilliseconds($TimeoutSeconds * 1000)) {
-                try { $process.Kill() } catch {}
-                $lastOutput = ''
-                $lastRc     = 2
-                $lastErr    = "Command timed out after $TimeoutSeconds seconds"
-                Write-Warning "[AzCli] Timeout ($TimeoutSeconds s) for: $($Arguments -join ' ')"
-            } else {
-                $lastOutput = if ($null -eq $stdout) { '' } else { $stdout.Trim() }
-                $lastRc     = $process.ExitCode
-                $lastErr    = if ($null -eq $stderr) { '' } else { $stderr.Trim() }
+                if (-not $process.WaitForMilliseconds($TimeoutSeconds * 1000)) {
+                    try { $process.Kill() } catch {}
+                    $lastOutput = ''
+                    $lastRc     = 2
+                    $lastErr    = "Command timed out after $TimeoutSeconds seconds"
+                    Write-Warning "[AzCli] Timeout ($TimeoutSeconds s) for: $($Arguments -join ' ')"
+                } else {
+                    $lastOutput = if ($null -eq $stdout) { '' } else { $stdout.Trim() }
+                    $lastRc     = $process.ExitCode
+                    $lastErr    = if ($null -eq $stderr) { '' } else { $stderr.Trim() }
+                }
             }
         } catch {
             $lastOutput = ''
