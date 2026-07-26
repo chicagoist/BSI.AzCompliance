@@ -2,10 +2,10 @@
     "version": "3.0.0",
     "generator": "BSI.AzCompliance",
     "repository": "https://github.com/chicagoist/BSI-AzCompliance",
-    "lastSynced": "2026-07-25T00:00:00Z",
-    "catalogUrl": "https://raw.githubusercontent.com/BSI-Bund/IT-Grundschutz-Kompendium/refs/heads/main/OSCAL/Grundschutz-plus-catalog.json",
+    "lastSynced": "2026-07-26T21:00:00Z",
+    "catalogUrl": "https://raw.githubusercontent.com/BSI-Bund/Stand-der-Technik-Bibliothek/main/Anwenderkataloge/Grundschutz++/Grundschutz++-catalog.json",
     "catalogFallbackUrls": [
-        "https://raw.githubusercontent.com/BSI-Bund/IT-Grundschutz-Kompendium/main/OSCAL/Grundschutz-plus-catalog.json"
+        "https://raw.githubusercontent.com/BSI-Bund/Stand-der-Technik-Bibliothek/main/Anwenderkataloge/Grundschutz++/Grundschutz++-catalog.json"
     ],
     "mappings": [
         {

@@ -1,7 +1,11 @@
 # BSI-AzCompliance .gitignore
 
-# Downloaded BSI OSCAL catalog cache (large, auto-downloaded)
-Data/cache/
+# BSI OSCAL catalog cache (auto-downloaded copies — catalog in repo is the committed version)
+# The committed Grundschutz++-catalog.json in repo is the source of truth.
+# Running with -Sync re-downloads and must not overwrite committed file.
+Data/cache/*.tmp
+Data/cache/*.download
+Data/cache/*.bak
 
 # User-specific configuration (contains Azure resource names)
 config.ps1
