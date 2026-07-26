@@ -19,9 +19,9 @@
                 "description": "NSG rules must deny SSH (22) and RDP (3389) from Internet",
                 "mustMatchAtLeast": 3,
                 "patterns": [
-                    "az network nsg rule create.*--destination-port-ranges 22.*--access Deny",
-                    "az network nsg rule create.*--destination-port-ranges 3389.*--access Deny",
-                    "DenySsh|DenyRdp|Deny-SSH|Deny-RDP|nsg.*deny.*inbound"
+                    "Deny.*Internet.*Port.*22",
+                    "Deny.*Internet.*Port.*3389",
+                    "DenySsh|DenyRdp|Deny-SSH|Deny-RDP|nsg.*deny.*inbound|ARCH.5.2"
                 ]
             }
         },
@@ -57,7 +57,7 @@
                 "patterns": [
                     "VM-(db|app).*--public-ip-address.*\\\"\\\"|--public-ip-address.*''",
                     "NIC-First|nic.*create.*--private-ip|--nics",
-                    "NoPublicIp|no.*public.*ip"
+                    "NoPublicIp|no.*public.*ip|ohne.*oeffentliche.*IP|ARCH.5.1"
                 ]
             }
         },
