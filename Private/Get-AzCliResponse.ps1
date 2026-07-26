@@ -84,23 +84,28 @@ function Get-AzCliResponse {
                 return [PSCustomObject]@{ Output = ''; ExitCode = 1; Stderr = 'az CLI not found in PATH' }
             }
 
+            # WSL2 interop: Windows az binary needs bash -c wrapper
+            # System.Diagnostics.Process can't pass HOME/WSL auth context to Windows binaries
+            $isWslAz = $IsLinux -and $azExe -match '^/mnt/'
+
             $process = New-Object System.Diagnostics.Process
-            $process.StartInfo.FileName = $azExe
-            $process.StartInfo.Arguments = ($allArgs | ForEach-Object {
-                if ($_ -match '\s') { "`"$_`"" } else { $_ }
-            }) -join ' '
+            if ($isWslAz) {
+                # Run via bash -c so WSL interop correctly handles auth tokens
+                $process.StartInfo.FileName = '/bin/bash'
+                $quotedArgs = ($allArgs | ForEach-Object {
+                    if ($_ -match '[\s"$`]') { "'" + ($_ -replace "'", "'\''") + "'" } else { $_ }
+                }) -join ' '
+                $process.StartInfo.Arguments = "-c `"az $quotedArgs`""
+            } else {
+                $process.StartInfo.FileName = $azExe
+                $process.StartInfo.Arguments = ($allArgs | ForEach-Object {
+                    if ($_ -match '\s') { "`"$_`"" } else { $_ }
+                }) -join ' '
+            }
             $process.StartInfo.UseShellExecute = $false
             $process.StartInfo.RedirectStandardOutput = $true
             $process.StartInfo.RedirectStandardError = $true
             $process.StartInfo.CreateNoWindow = $true
-
-            # WSL2 interop: ensure Windows az binary uses WSL HOME for auth tokens
-            # WSLENV HOME/p translates /home/user → \\wsl$\... for Windows process
-            if ($IsLinux -and $azExe -match '^/mnt/') {
-                $process.StartInfo.EnvironmentVariables["HOME"] = $env:HOME
-                $existingWslEnv = if ($env:WSLENV) { "$env:WSLENV:" } else { '' }
-                $process.StartInfo.EnvironmentVariables["WSLENV"] = "${existingWslEnv}HOME/p"
-            }
 
             $null = $process.Start()
             $stdout = $process.StandardOutput.ReadToEnd()
