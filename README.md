@@ -232,7 +232,9 @@ If you cannot create an App Registration (e.g., student account without Azure AD
 
 ```bash
 # On the VM (e.g., VM-web):
-curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/v2.336.0/actions-runner-linux-x64-2.336.0.tar.gz
+# Get the latest runner version: https://github.com/actions/runner/releases
+RUNNER_VER=$(curl -s https://api.github.com/repos/actions/runner/releases/latest | grep -oP '"tag_name": "v\K[^"]+')
+curl -o actions-runner.tar.gz -L "https://github.com/actions/runner/releases/download/v${RUNNER_VER}/actions-runner-linux-x64-${RUNNER_VER}.tar.gz"
 tar xzf actions-runner.tar.gz && rm actions-runner.tar.gz
 ./config.sh --url https://github.com/YOUR_ORG/BSI.AzCompliance --token YOUR_RUNNER_TOKEN --name vm-web-runner --labels azure,self-hosted,linux
 sudo ./svc.sh install && sudo ./svc.sh start
