@@ -94,6 +94,14 @@ function Get-AzCliResponse {
             $process.StartInfo.RedirectStandardError = $true
             $process.StartInfo.CreateNoWindow = $true
 
+            # WSL2 interop: ensure Windows az binary uses WSL HOME for auth tokens
+            # WSLENV HOME/p translates /home/user → \\wsl$\... for Windows process
+            if ($IsLinux -and $azExe -match '^/mnt/') {
+                $process.StartInfo.EnvironmentVariables["HOME"] = $env:HOME
+                $existingWslEnv = if ($env:WSLENV) { "$env:WSLENV:" } else { '' }
+                $process.StartInfo.EnvironmentVariables["WSLENV"] = "${existingWslEnv}HOME/p"
+            }
+
             $null = $process.Start()
             $stdout = $process.StandardOutput.ReadToEnd()
             $stderr = $process.StandardError.ReadToEnd()
