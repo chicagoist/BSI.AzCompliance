@@ -70,7 +70,7 @@ function Invoke-BsiCompliance {
         [string[]]$DenyPorts = @('22', '3389')
     )
 
-    $ErrorActionPreference = 'Stop'
+    $ErrorActionPreference = 'Continue'
 
     # --- Determine mode ---
     if (-not $Local -and -not $Remote -and -not $Sync) {
