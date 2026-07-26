@@ -33,15 +33,32 @@ jobs:
       - name: Local Compliance Check (Trap Scripts)
         shell: pwsh
         run: |
-          Import-Module ./BSI.AzCompliance.psd1 -Force
+          $ErrorActionPreference = 'Stop'
+          Write-Host "=== PowerShell: $($PSVersionTable.PSVersion) on $($PSVersionTable.OS)" -ForegroundColor Cyan
+          Write-Host "=== PWD: $PWD" -ForegroundColor Cyan
+          
+          Import-Module ./BSI.AzCompliance.psd1 -Force -ErrorAction Stop
+          Write-Host "[OK] Module imported (v$((Get-Module BSI.AzCompliance).Version))" -ForegroundColor Green
+          
           $trapScript = Get-ChildItem -Recurse -Path ./Tests/Integration -Filter 'trap-real-00-baseline.ps1' | Select-Object -First 1
-          if ($trapScript) {
-            New-Item -ItemType Directory -Force -Path ./reports | Out-Null
-            Invoke-BsiCompliance -Local -ScriptPath $trapScript.FullName -OutputFormat Console,Sarif -OutputPath ./reports/local-bsi
-            Write-Host "[OK] Local validation passed using $($trapScript.Name)"
-          } else {
-            Write-Warning 'No trap script found; skipping Local checks'
+          if (-not $trapScript) {
+            Write-Error 'No trap script found! Tests/Integration is empty.'
+            exit 1
           }
+          Write-Host "[OK] Found trap script: $($trapScript.Name)" -ForegroundColor Green
+          
+          New-Item -ItemType Directory -Force -Path ./reports | Out-Null
+          $failedCount = Invoke-BsiCompliance -Local -ScriptPath $trapScript.FullName -OutputFormat Console,Sarif -OutputPath ./reports/local-bsi
+          
+          Write-Host ""
+          Write-Host "=== Result: $failedCount check(s) failed ===" -ForegroundColor $(if ($failedCount -eq 0) { 'Green' } else { 'Yellow' })
+          
+          if (-not (Test-Path './reports/local-bsi.sarif')) {
+            Write-Error 'SARIF report was NOT generated!'
+            exit 1
+          }
+          Write-Host "[OK] SARIF generated ($((Get-Item './reports/local-bsi.sarif').Length) bytes)" -ForegroundColor Green
+          Write-Host "[OK] Local validation completed successfully" -ForegroundColor Green
 
       - name: Upload SARIF to Code Scanning
         uses: github/codeql-action/upload-sarif@v4
@@ -53,14 +70,17 @@ jobs:
   # =====================================================================
   # REMOTE VALIDATION — runs on self-hosted runner (VM-web in Azure).
   # Uses Managed Identity instead of OIDC — no Azure AD App Registration needed.
+  # NOTE: Only runs on schedule/workflow_dispatch. Push trigger removed because
+  # self-hosted runner is offline (VM-web deleted) and would block the CI/CD queue.
+  # To re-enable on push: add back "(github.event_name == 'push' && github.ref == 'refs/heads/main')"
   # =====================================================================
   remote-validation:
     name: Remote BSI Validation
     runs-on: [self-hosted, azure]
+    timeout-minutes: 30
     if: |
       github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      github.event_name == 'workflow_dispatch'
     # Uses Managed Identity on self-hosted runner — no OIDC secrets needed
     steps:
       - name: Checkout
