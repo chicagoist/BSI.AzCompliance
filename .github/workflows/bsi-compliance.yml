@@ -48,10 +48,11 @@ jobs:
           Write-Host "[OK] Found trap script: $($trapScript.Name)" -ForegroundColor Green
           
           New-Item -ItemType Directory -Force -Path ./reports | Out-Null
-          $failedCount = Invoke-BsiCompliance -Local -ScriptPath $trapScript.FullName -OutputFormat Console,Sarif -OutputPath ./reports/local-bsi
+          $result = Invoke-BsiCompliance -Local -ScriptPath $trapScript.FullName -OutputFormat Console,Sarif -OutputPath ./reports/local-bsi
+          $exitCode = if ($result -is [array]) { $result[-1] } else { $result }
           
           Write-Host ""
-          Write-Host "=== Result: $failedCount check(s) failed ===" -ForegroundColor $(if ($failedCount -eq 0) { 'Green' } else { 'Yellow' })
+          Write-Host "=== Result: $exitCode check(s) failed ===" -ForegroundColor $(if ($exitCode -eq 0) { 'Green' } else { 'Yellow' })
           
           if (-not (Test-Path './reports/local-bsi.sarif')) {
             Write-Error 'SARIF report was NOT generated!'
