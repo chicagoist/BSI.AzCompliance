@@ -166,7 +166,8 @@ function Invoke-BsiCompliance {
                 -Mode ([BsiCheckMode]::Local) -Status $status `
                 -Severity ([BsiSeverity]::Medium) `
                 -Details "$($lc.description) (matched $matched / required $required, max $maxAllowed)" `
-                -CheckFunction 'Invoke-BsiCompliance'
+                -CheckFunction 'Invoke-BsiCompliance' `
+                -SourceFile $ScriptPath -LineNumber 0
         }
     }
 

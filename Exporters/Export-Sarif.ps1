@@ -66,20 +66,22 @@ function Export-Sarif {
             }
         }
 
-        if ($r.SourceFile) {
-            $resultObj | Add-Member -NotePropertyName 'locations' -NotePropertyValue @(
-                [PSCustomObject]@{
-                    physicalLocation = [PSCustomObject]@{
-                        artifactLocation = [PSCustomObject]@{
-                            uri = $r.SourceFile
-                        }
-                        region = [PSCustomObject]@{
-                            startLine = [Math]::Max($r.LineNumber, 1)
-                        }
+        # GitHub Code Scanning requires at least one location per result.
+        # Use SourceFile if available, otherwise fall back to a logical location.
+        $uri = if ($r.SourceFile) { $r.SourceFile } else { 'bsi-compliance-check' }
+        $line = if ($r.LineNumber -gt 0) { $r.LineNumber } else { 1 }
+        $resultObj | Add-Member -NotePropertyName 'locations' -NotePropertyValue @(
+            [PSCustomObject]@{
+                physicalLocation = [PSCustomObject]@{
+                    artifactLocation = [PSCustomObject]@{
+                        uri = $uri
+                    }
+                    region = [PSCustomObject]@{
+                        startLine = $line
                     }
                 }
-            )
-        }
+            }
+        )
 
         $sarifResults += $resultObj
     }
