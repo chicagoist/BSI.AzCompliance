@@ -19,8 +19,8 @@
                 "description": "NSG rules must deny SSH (22) and RDP (3389) from Internet",
                 "mustMatchAtLeast": 3,
                 "patterns": [
-                    "Deny.*Internet.*Port.*22",
-                    "Deny.*Internet.*Port.*3389",
+                    "Deny.*Internet.*[Pp]ort.*22|Deny.*Internet.*22.*Deny",
+                    "Deny.*Internet.*[Pp]ort.*3389|Deny.*Internet.*3389.*Deny",
                     "DenySsh|DenyRdp|Deny-SSH|Deny-RDP|nsg.*deny.*inbound|ARCH.5.2"
                 ]
             }
