@@ -1,6 +1,6 @@
 @{
     RootModule        = 'BSI.AzCompliance.psm1'
-    ModuleVersion     = '3.0.0'
+    ModuleVersion     = '3.1.0'
     GUID              = 'b1a2c3d4-e5f6-7890-abcd-ef1234567890'
     Author            = 'Valerii Dundukov'
     CompanyName       = 'CYBER-SECURITY'
@@ -26,6 +26,9 @@
         'Sync-BsiCatalog',
         'Get-BsiMapping',
         'Get-BsiCatalogControls',
+        'Test-BsiCatalogExists',
+        'Get-BsiCatalog',
+        'Test-BsiCatalogUpdate',
         'Get-AzCliResponse',
         'Test-AzCliReady',
         'Test-NsgDenyInbound',

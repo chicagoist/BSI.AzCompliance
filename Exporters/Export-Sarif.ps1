@@ -38,7 +38,7 @@ function Export-Sarif {
             }
         }
     } else {
-        Write-Warning "[Export-Sarif] Check manifest not found at $manifestPath — SARIF output will not include rule definitions"
+        Write-Warning "[Export-Sarif] Check manifest not found at $manifestPath -- SARIF output will not include rule definitions"
     }
     $sarifResults = @()
     foreach ($r in $Results) {

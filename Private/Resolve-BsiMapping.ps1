@@ -33,6 +33,11 @@ function Resolve-BsiOrphans {
     <#
     .SYNOPSIS
         Finds mapping entries whose control IDs are not in the catalog.
+    .DESCRIPTION
+        Compares mapping control IDs against both control-level and group-level
+        IDs from the resolved catalog. Skips entries marked with
+        source='azure-extension' (Azure-specific custom checks that don't
+        correspond to any BSI catalog entry).
     .OUTPUTS
         Array of orphaned control IDs.
     #>
@@ -41,9 +46,17 @@ function Resolve-BsiOrphans {
         [Parameter(Mandatory)]$CatalogControls
     )
 
+    # Catalog now contains both control and group nodes (see Get-BsiCatalogControls)
     $catalogIds = $CatalogControls | ForEach-Object { $_.id }
+
     return @($Mapping.mappings | Where-Object {
-        $_.controlId -notlike "AZURE.*" -and $catalogIds -notcontains $_.controlId
+        $cid = $_.controlId
+
+        # Data-driven: skip entries explicitly marked as Azure extensions
+        if ($_.source -eq 'azure-extension') { return $false }
+
+        # True orphan: not found in catalog and not a known extension
+        return ($catalogIds -notcontains $cid)
     } | ForEach-Object { $_.controlId })
 }
 

@@ -27,10 +27,10 @@ if (-not (Test-Path -LiteralPath $script:ModuleCache)) {
 }
 
 # --- Load Enums ---
-. (Join-Path $script:ModuleRoot 'Enums' 'Severity.ps1')
+. (Join-Path (Join-Path $script:ModuleRoot 'Enums') 'Severity.ps1')
 
 # --- Load Classes ---
-. (Join-Path $script:ModuleRoot 'Classes' 'ComplianceResult.ps1')
+. (Join-Path (Join-Path $script:ModuleRoot 'Classes') 'ComplianceResult.ps1')
 
 # --- Load Private functions ---
 $privatePath = Join-Path $script:ModuleRoot 'Private'

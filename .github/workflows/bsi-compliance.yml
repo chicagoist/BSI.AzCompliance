@@ -18,55 +18,154 @@ on:
 permissions:
   contents: read
   security-events: write
+  issues: write
 
 jobs:
   # =====================================================================
+  # CATALOG MONITOR — runs daily/weekly, checks BSI repo for catalog updates.
+  # Alerts when a new version of the BSI Grundschutz++ catalog is published.
+  # Can auto-sync on detection or just notify.
+  # =====================================================================
+  catalog-monitor:
+    name: BSI Catalog Change Monitor
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for BSI Catalog Updates
+        shell: pwsh
+        id: monitor
+        run: |
+          Import-Module ./BSI.AzCompliance.psd1 -Force -ErrorAction Stop
+          $check = Test-BsiCatalogUpdate -MappingPath ./Data/bsi-azure-mapping.json
+
+          if ($check.Error) {
+            Write-Warning "Monitor error: $($check.Error)"
+            "hasUpdate=false" >> $env:GITHUB_OUTPUT
+            "error=$($check.Error)" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+
+          Write-Host "Latest commit SHA : $($check.LatestSha.Substring(0,12))"
+          Write-Host "Stored commit SHA : $(if ($check.StoredSha -ne '(none)') { $check.StoredSha.Substring(0, [Math]::Min(12, $check.StoredSha.Length)) } else { '(none)' })"
+          Write-Host "Commit date       : $($check.CommitDate)"
+          Write-Host "Commit message    : $($check.CommitMessage)"
+
+          "hasUpdate=$($check.HasUpdate.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          "latestSha=$($check.LatestSha)" >> $env:GITHUB_OUTPUT
+          "commitDate=$($check.CommitDate)" >> $env:GITHUB_OUTPUT
+
+          if ($check.HasUpdate) {
+            Write-Host ''
+            Write-Host '::warning::BSI catalog update detected! Latest commit: ' + $check.LatestSha.Substring(0,12) + ' from ' + $check.CommitDate
+            Write-Host '::notice::Run Invoke-BsiCompliance -Sync to update the local catalog.'
+          } else {
+            Write-Host ''
+            Write-Host '[OK] Catalog is up-to-date.' -ForegroundColor Green
+          }
+
+      - name: Auto-Sync Catalog (if update detected)
+        if: steps.monitor.outputs.hasUpdate == 'true'
+        shell: pwsh
+        run: |
+          Import-Module ./BSI.AzCompliance.psd1 -Force -ErrorAction Stop
+          $cacheDir = './Data/cache'
+          if (-not (Test-Path $cacheDir)) { New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null }
+          Sync-BsiCatalog -OutPath './Data/cache/Grundschutz++-catalog.json' -MappingPath './Data/bsi-azure-mapping.json'
+          Write-Host '[OK] Catalog auto-synced successfully.' -ForegroundColor Green
+
+      - name: Create Issue on Catalog Update
+        if: steps.monitor.outputs.hasUpdate == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ steps.monitor.outputs.latestSha }}'.substring(0, 12);
+            const date = '${{ steps.monitor.outputs.commitDate }}';
+            const body = `## BSI Catalog Update Detected
+
+            A new version of the BSI IT-Grundschutz++ catalog has been published.
+
+            - **Commit SHA:** \`${sha}\`
+            - **Commit Date:** ${date}
+            - **Catalog URL:** https://github.com/BSI-Bund/Stand-der-Technik-Bibliothek/blob/main/control_layer/Grundschutz%2B%2B/Grundschutz%2B%2B-resolved_catalog.json
+
+            ### Action Required
+            The catalog was auto-synced in this run. Review the changes and update the BSI mapping if new controls were added.
+
+            - \`git pull\` to get the updated catalog
+            - Run \`Invoke-BsiCompliance -Local -Sync -ScriptPath ...\` to verify
+            - Update \`_CheckManifest.json\` and check functions if new controls were added`;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[BSI Monitor] Catalog update detected - ${date}`,
+              body: body,
+              labels: ['bsi-catalog', 'automated']
+            });
+
+  # =====================================================================
   # LOCAL VALIDATION — runs on every PR/push. Tests module against trap scripts.
+  # Matrix: PS 7 (ubuntu) + PS 5.1 (windows) for cross-version compatibility.
   # =====================================================================
   local-validation:
-    name: Local BSI Validation
-    runs-on: ubuntu-latest
+    name: Local BSI Validation (${{ matrix.ps-label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            ps-shell: pwsh
+            ps-label: PS7
+          - os: windows-latest
+            ps-shell: powershell
+            ps-label: PS5.1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Local Compliance Check (Trap Scripts)
-        shell: pwsh
+        shell: ${{ matrix.ps-shell }}
         run: |
           $ErrorActionPreference = 'Stop'
-          Write-Host "=== PowerShell: $($PSVersionTable.PSVersion) on $($PSVersionTable.OS)" -ForegroundColor Cyan
-          Write-Host "=== PWD: $PWD" -ForegroundColor Cyan
+          Write-Host "=== PowerShell: $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))"
+          Write-Host "=== Module requires: PS 5.1+ | Current PS version compatible: $($PSVersionTable.PSVersion.Major -ge 5)"
           
           Import-Module ./BSI.AzCompliance.psd1 -Force -ErrorAction Stop
-          Write-Host "[OK] Module imported (v$((Get-Module BSI.AzCompliance).Version))" -ForegroundColor Green
+          Write-Host "[OK] Module imported (v$((Get-Module BSI.AzCompliance).Version))"
           
           $trapScript = Get-ChildItem -Recurse -Path ./Tests/Integration -Filter 'trap-real-00-baseline.ps1' | Select-Object -First 1
           if (-not $trapScript) {
             Write-Error 'No trap script found! Tests/Integration is empty.'
             exit 1
           }
-          Write-Host "[OK] Found trap script: $($trapScript.Name)" -ForegroundColor Green
+          Write-Host "[OK] Found trap script: $($trapScript.Name)"
           
           New-Item -ItemType Directory -Force -Path ./reports | Out-Null
           $result = Invoke-BsiCompliance -Local -ScriptPath $trapScript.FullName -OutputFormat Console,Sarif -OutputPath ./reports/local-bsi
           $exitCode = if ($result -is [array]) { $result[-1] } else { $result }
           
           Write-Host ""
-          Write-Host "=== Result: $exitCode check(s) failed ===" -ForegroundColor $(if ($exitCode -eq 0) { 'Green' } else { 'Yellow' })
+          Write-Host "=== Result: $exitCode check(s) failed ==="
           
           if (-not (Test-Path './reports/local-bsi.sarif')) {
             Write-Error 'SARIF report was NOT generated!'
             exit 1
           }
-          Write-Host "[OK] SARIF generated ($((Get-Item './reports/local-bsi.sarif').Length) bytes)" -ForegroundColor Green
-          Write-Host "[OK] Local validation completed successfully" -ForegroundColor Green
+          Write-Host "[OK] SARIF generated ($((Get-Item './reports/local-bsi.sarif').Length) bytes)"
+          Write-Host "[OK] Local validation completed successfully (${{ matrix.ps-label }})"
 
       - name: Upload SARIF to Code Scanning
         uses: github/codeql-action/upload-sarif@v4
         if: always() && hashFiles('./reports/local-bsi.sarif') != ''
         with:
           sarif_file: ./reports/local-bsi.sarif
-          category: bsi-local-validation
+          category: bsi-local-validation-${{ matrix.ps-label }}
 
   # =====================================================================
   # REMOTE VALIDATION — runs on self-hosted runner (VM-web in Azure).

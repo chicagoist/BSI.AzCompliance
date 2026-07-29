@@ -1,12 +1,47 @@
 #Requires -Version 5.1
 
-# --- Resolve paths ---
-$testFile = if ($PSCommandPath) { $PSCommandPath } elseif ($PSScriptRoot) { Join-Path $PSScriptRoot 'BSI.AzCompliance.Tests.ps1' } else { $MyInvocation.MyCommand.Path }
-$testDir  = Split-Path -Parent $testFile
-$moduleRoot = Split-Path -Parent $testDir
+# --- Resolve $global:moduleRoot (multi-fallback: local dev + CI/CD) ---
+# Uses $global: scope to survive Pester's It-block scoping boundaries.
+# $PSScriptRoot is the Tests/ directory when this file is run by Pester.
+$global:moduleRoot = $null
 
-# Import module (no using module needed — New-BsiComplianceResult handles class creation)
-Import-Module (Join-Path $moduleRoot 'BSI.AzCompliance.psd1') -Force
+# 1) Primary: $PSScriptRoot → parent dir (works in most Pester contexts)
+if ($PSScriptRoot) {
+    $candidate = Split-Path -Parent $PSScriptRoot
+    if (Test-Path (Join-Path $candidate 'BSI.AzCompliance.psd1')) { $global:moduleRoot = $candidate }
+}
+
+# 2) Walk up from current location (works when run interactively from project root)
+if (-not $global:moduleRoot) {
+    $current = (Get-Location).Path
+    for ($i = 0; $i -lt 5; $i++) {
+        if (Test-Path (Join-Path $current 'BSI.AzCompliance.psd1')) {
+            $global:moduleRoot = $current
+            break
+        }
+        $current = Split-Path -Parent $current
+        if (-not $current) { break }
+    }
+}
+
+# 3) CI/CD environment variables (Azure DevOps / GitHub Actions)
+if (-not $global:moduleRoot) {
+    foreach ($envVar in @('BUILD_SOURCESDIRECTORY', 'GITHUB_WORKSPACE')) {
+        $candidate = [Environment]::GetEnvironmentVariable($envVar)
+        if ($candidate -and (Test-Path (Join-Path $candidate 'BSI.AzCompliance.psd1'))) {
+            $global:moduleRoot = $candidate
+            break
+        }
+    }
+}
+
+# 4) Last resort: current directory (prevents null crashes)
+if (-not $global:moduleRoot) {
+    $global:moduleRoot = (Get-Location).Path
+}
+
+# Import module
+Import-Module (Join-Path $global:moduleRoot 'BSI.AzCompliance.psd1') -Force
 
 # ============================================================
 #  ENUMS
@@ -184,39 +219,25 @@ Describe 'Result store functions' {
 # ============================================================
 Describe 'Catalog functions' {
     It 'Test-BsiCatalogExists returns false for missing path' {
-        $result = $false
-        try {
-            $result = Test-BsiCatalogExists -Path (Join-Path $TestDrive 'nonexistent' 'catalog.json')
-        } catch {
-            # Private function — skip gracefully
-            Set-ItResult -Skipped -Because 'Test-BsiCatalogExists is a private function (not exported)'
-            return
-        }
+        $result = Test-BsiCatalogExists -Path (Join-Path $TestDrive 'nonexistent' 'catalog.json')
         $result | Should -BeFalse
     }
 
     It 'Get-BsiCatalog returns null for missing path' {
-        $result = $null
-        try {
-            $result = Get-BsiCatalog -Path (Join-Path $TestDrive 'nonexistent' 'catalog.json')
-        } catch {
-            Set-ItResult -Skipped -Because 'Get-BsiCatalog is a private function (not exported)'
-            return
-        }
+        $result = Get-BsiCatalog -Path (Join-Path $TestDrive 'nonexistent' 'catalog.json')
         $result | Should -BeNullOrEmpty
     }
 }
 
 Describe 'Mapping functions' {
-    $mapPath = Join-Path $moduleRoot 'Data' 'bsi-azure-mapping.json'
-
     It 'Get-BsiMapping loads valid mapping' {
+        $mapPath = Join-Path $global:moduleRoot 'Data' 'bsi-azure-mapping.json'
         if (Test-Path -LiteralPath $mapPath) {
             $m = Get-BsiMapping -Path $mapPath
             $m | Should -Not -BeNullOrEmpty
             $m.mappings | Should -Not -BeNullOrEmpty
         } else {
-            Set-ItResult -Skipped -Because "mapping file not found at $mapPath"
+            Set-ItResult -Skipped -Because 'mapping file not found'
         }
     }
 }
@@ -225,18 +246,14 @@ Describe 'Mapping functions' {
 #  CHECK MANIFEST
 # ============================================================
 Describe 'Check manifest' {
-    $manifestPath = Join-Path $moduleRoot 'Checks' '_CheckManifest.json'
-
     It 'exists' {
-        if (-not $manifestPath) {
-            Set-ItResult -Skipped -Because 'moduleRoot not resolved'
-            return
-        }
+        $manifestPath = Join-Path $global:moduleRoot 'Checks' '_CheckManifest.json'
         Test-Path -LiteralPath $manifestPath | Should -BeTrue
     }
 
     It 'is valid JSON' {
-        if (-not $manifestPath -or -not (Test-Path -LiteralPath $manifestPath)) {
+        $manifestPath = Join-Path $global:moduleRoot 'Checks' '_CheckManifest.json'
+        if (-not (Test-Path -LiteralPath $manifestPath)) {
             Set-ItResult -Skipped -Because 'manifest not found'
             return
         }
@@ -246,19 +263,21 @@ Describe 'Check manifest' {
     }
 
     It 'all declared check functions have matching .ps1 files' {
-        if (-not $manifestPath -or -not (Test-Path -LiteralPath $manifestPath)) {
+        $manifestPath = Join-Path $global:moduleRoot 'Checks' '_CheckManifest.json'
+        if (-not (Test-Path -LiteralPath $manifestPath)) {
             Set-ItResult -Skipped -Because 'manifest not found'
             return
         }
         $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
         foreach ($check in $manifest.checks) {
-            $checkPath = Join-Path $moduleRoot $check.file
+            $checkPath = Join-Path $global:moduleRoot $check.file
             Test-Path -LiteralPath $checkPath | Should -BeTrue -Because "check $($check.id) needs $($check.file)"
         }
     }
 
     It 'every check has a unique id' {
-        if (-not $manifestPath -or -not (Test-Path -LiteralPath $manifestPath)) {
+        $manifestPath = Join-Path $global:moduleRoot 'Checks' '_CheckManifest.json'
+        if (-not (Test-Path -LiteralPath $manifestPath)) {
             Set-ItResult -Skipped -Because 'manifest not found'
             return
         }
@@ -274,12 +293,15 @@ Describe 'Check manifest' {
 # ============================================================
 Describe 'Get-AzCliResponse' {
     It 'Test-AzCliReady succeeds when az is available' {
-        try {
-            Test-AzCliReady | Out-Null
-            $true | Should -BeTrue
-        } catch {
-            Set-ItResult -Skipped -Because 'az CLI not available in test environment'
+        # Mock az CLI inside the BSI.AzCompliance module scope where Test-AzCliReady lives
+        Mock Get-Command -ModuleName BSI.AzCompliance -ParameterFilter { $Name -eq 'az' } {
+            return [PSCustomObject]@{ Source = '/usr/bin/az' }
         }
+        Mock Get-AzCliResponse -ModuleName BSI.AzCompliance {
+            return [PSCustomObject]@{ Output = 'test-subscription'; ExitCode = 0; Stderr = '' }
+        }
+        $result = Test-AzCliReady
+        $result | Should -BeTrue
     }
 }
 

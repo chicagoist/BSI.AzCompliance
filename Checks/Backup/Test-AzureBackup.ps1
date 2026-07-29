@@ -43,7 +43,7 @@ function Test-AzureBackup {
         $result.CheckFunction = 'Test-AzureBackup'
         $result.BsiReference  = 'BSI-G-00763'
         if (-not $pass) {
-            $result.Remediation = "Enable backup for $vmName — current state: $state"
+            $result.Remediation = "Enable backup for $vmName -- current state: $state"
         }
         $result.Metadata['vm'] = $vmName
         $results += $result

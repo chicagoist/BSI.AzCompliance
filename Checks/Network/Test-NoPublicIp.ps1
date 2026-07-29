@@ -40,7 +40,7 @@ function Test-NoPublicIp {
         $result = [ComplianceResult]::new(
             'ARCH.5.1', "$vmName has no Public IP", 'Network',
             [BsiCheckMode]::Remote, $status, [BsiSeverity]::Critical,
-            $(if ($pass) { "$vmName correctly has no public IP" } else { "Public IP found on $vmName — violates ARCH.5.1" })
+            $(if ($pass) { "$vmName correctly has no public IP" } else { "Public IP found on $vmName -- violates ARCH.5.1" })
         )
         $result.CheckFunction = 'Test-NoPublicIp'
         $result.BsiReference  = 'BSI-G-00548'
