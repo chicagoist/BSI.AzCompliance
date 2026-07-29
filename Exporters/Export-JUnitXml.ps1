@@ -66,7 +66,8 @@ $suiteXml
         if ($dir -and -not (Test-Path -LiteralPath $dir)) {
             New-Item -ItemType Directory -Path $dir -Force | Out-Null
         }
-        $xml | Set-Content -Path $OutputPath -Encoding UTF8
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($OutputPath, $xml, $utf8NoBom)
         Write-Verbose "[Export-JUnitXml] Written to $OutputPath"
     }
 

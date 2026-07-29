@@ -79,7 +79,8 @@ function Sync-BsiCatalog {
         Write-Verbose "[Catalog] Could not record commit SHA (non-critical): $_"
     }
 
-    $mapping | ConvertTo-Json -Depth 10 | Set-Content -Path $MappingPath -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($MappingPath, ($mapping | ConvertTo-Json -Depth 10), $utf8NoBom)
 }
 
 function Get-BsiCatalog {

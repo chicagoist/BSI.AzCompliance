@@ -113,7 +113,8 @@ function Export-Sarif {
         if ($dir -and -not (Test-Path -LiteralPath $dir)) {
             New-Item -ItemType Directory -Path $dir -Force | Out-Null
         }
-        $json | Set-Content -Path $OutputPath -Encoding UTF8
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($OutputPath, $json, $utf8NoBom)
         Write-Verbose "[Export-Sarif] Written to $OutputPath"
     }
 

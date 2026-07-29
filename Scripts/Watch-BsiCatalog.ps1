@@ -107,7 +107,8 @@ if ($OutputPath) {
     if ($dir -and -not (Test-Path -LiteralPath $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
-    $result | ConvertTo-Json -Depth 5 | Set-Content -Path $OutputPath -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($OutputPath, ($result | ConvertTo-Json -Depth 5), $utf8NoBom)
     if (-not $Quiet) { Write-Host "`n[OK] Results exported to $OutputPath" -ForegroundColor Green }
 }
 

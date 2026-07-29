@@ -82,7 +82,8 @@ function Update-BsiMappingTimestamp {
 
     $mapping = Get-BsiMapping -Path $Path
     $mapping.lastSynced = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
-    $mapping | ConvertTo-Json -Depth 10 | Set-Content -Path $Path -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($Path, ($mapping | ConvertTo-Json -Depth 10), $utf8NoBom)
 }
 
 function Update-BsiSkillReadme {
@@ -118,6 +119,7 @@ function Update-BsiSkillReadme {
     $null = $lines.Add('Invoke-BsiCompliance -Local -ScriptPath .\create_3-tier-webapp_VM_v2.ps1')
     $null = $lines.Add('Invoke-BsiCompliance -Remote -ConfigPath .\config.ps1')
     $null = $lines.Add('```')
-    $lines | Set-Content -Path $OutputPath -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($OutputPath, ($lines -join "`r`n"), $utf8NoBom)
     Write-Verbose "[Mapping] Updated skill readme: $OutputPath"
 }
