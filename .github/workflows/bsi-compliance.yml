@@ -125,12 +125,14 @@ jobs:
           - os: windows-latest
             ps-shell: powershell
             ps-label: PS5.1
+    defaults:
+      run:
+        shell: ${{ matrix.ps-shell }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Local Compliance Check (Trap Scripts)
-        shell: ${{ matrix.ps-shell }}
         run: |
           $ErrorActionPreference = 'Stop'
           Write-Host "=== PowerShell: $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))"
