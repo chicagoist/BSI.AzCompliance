@@ -68,7 +68,17 @@ function Export-Sarif {
 
         # GitHub Code Scanning requires at least one location per result.
         # Use SourceFile if available, otherwise fall back to a logical location.
-        $uri = if ($r.SourceFile) { $r.SourceFile } else { 'bsi-compliance-check' }
+        # Windows absolute paths (e.g. D:\a\...) must be converted to file:/// URIs
+        # or relative paths — otherwise Code Scanning rejects the "d:" scheme.
+        $uri = if ($r.SourceFile) {
+            $normalized = $r.SourceFile -replace '\\', '/'
+            if ($normalized -match '^[A-Za-z]:/') {
+                # Windows absolute path → file:/// URI (RFC 8089)
+                'file:///' + $normalized
+            } else {
+                $normalized
+            }
+        } else { 'bsi-compliance-check' }
         $line = if ($r.LineNumber -gt 0) { $r.LineNumber } else { 1 }
         $resultObj | Add-Member -NotePropertyName 'locations' -NotePropertyValue @(
             [PSCustomObject]@{
